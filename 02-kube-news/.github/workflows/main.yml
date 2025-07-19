@@ -1,11 +1,12 @@
-name: CI Kube-News
+name: CI/CD Kube-News
 
 on:
   push:
-    branches: "main"
+    branches:
+      - main
 
 jobs:
-  build-and-push:
+  build-and-push-docker-image:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -17,10 +18,31 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push
+      - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./02-kube-news/src
-          file: ./02-kube-news/src/Dockerfile
+          context: 02-kube-news/src
+          file: 02-kube-news/src/Dockerfile
           push: true
           tags: rycpyres/kube-news-maratona:${{ github.run_number }}
+
+  deploy-to-kubernetes:
+    needs: build-and-push-docker-image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Kubeconfig
+        uses: azure/k8s-set-context@v3
+        with:
+          kubeconfig: ${{ secrets.KUBE_CONFIG }}
+
+      - name: Deploy to Kubernetes
+        uses: azure/k8s-deploy@v4
+        with:
+          manifests: |
+            02-kube-news/k8s/deployment.yaml
+          images: |
+            rycpyres/kube-news-maratona:${{ github.run_number }}
+
