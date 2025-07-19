@@ -21,7 +21,7 @@ jobs:
             - name: Build and push
               uses: docker/build-push-action@v6
               with:
-                context: "{{defaultContext}}:mysubdir"
+                context: 02-kube-news/src
                 file: 02-kube-news/src/Dockerfile
                 push: true
                 tags: |
